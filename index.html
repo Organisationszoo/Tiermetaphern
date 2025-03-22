@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Fragebogen (14 Fragen, Mix aus Tiermetaphern)</title>
+  <title>Fragebogen (15 Fragen, Mix aus Tiermetaphern)</title>
   <!-- Chart.js per CDN laden (Internetverbindung nötig) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -113,7 +113,7 @@
 
 <script>
 // =====================================================
-// 1) FRAGEN (14 Stück, inkl. Kombi in Frage 14)
+// 1) FRAGEN (15 Stück, inkl. Kombi in Frage 14 und Entwicklungsfeld in Frage 15)
 // =====================================================
 var questions = [
   {
@@ -236,22 +236,19 @@ var questions = [
   {
     frage: "Frage 14: Welche Stärken beschreiben dich am besten?",
     answers: {
-      A: {
-        code: "C1",
-        text: "Fleiß, Flexibilität, Eleganz, visionäre Ansätze (vereint mehrere Eigenschaften)."
-      },
-      B: {
-        code: "C2",
-        text: "Robust, unabhängig, zupackend, meistert große Herausforderungen."
-      },
-      C: {
-        code: "C3",
-        text: "Gelassen, bedächtig, weise, strategisch – oft mit ruhiger Energie."
-      },
-      D: {
-        code: "C4",
-        text: "Manchmal provokant, loyal, spontan und ideenreich in neuen Situationen."
-      }
+      A: { code: "C1", text: "Fleiß, Flexibilität, Eleganz, visionäre Ansätze (vereint mehrere Eigenschaften)." },
+      B: { code: "C2", text: "Robust, unabhängig, zupackend, meistert große Herausforderungen." },
+      C: { code: "C3", text: "Gelassen, bedächtig, weise, strategisch – oft mit ruhiger Energie." },
+      D: { code: "C4", text: "Manchmal provokant, loyal, spontan und ideenreich in neuen Situationen." }
+    }
+  },
+  {
+    frage: "Frage 15: In welchem Bereich erkennst du für dich persönlich ein Entwicklungsfeld?",
+    answers: {
+      A: { code: "C1", text: "Ich nehme mir vor, Kontrolle auch mal abzugeben und nicht alles perfekt machen zu wollen." },
+      B: { code: "C2", text: "Ich möchte lernen, mit Impulsen bewusster umzugehen und Geduld zu entwickeln." },
+      C: { code: "C3", text: "Ich arbeite daran, Entscheidungen mutiger zu treffen und nicht zu lange zu zögern." },
+      D: { code: "C4", text: "Ich versuche, meine Spontanität zu strukturieren und emotionalen Ausbrüchen vorzubeugen." }
     }
   }
 ];
@@ -315,7 +312,112 @@ var tierTexte = {
   "Hyäne": "🦝 (Hyäne?) Durchsetzungsstark, zielorientiert, flexibel",
   "Hybrid": "🔀 Vielseitig, innovativ, verbindet Verschiedenes"
 };
-
+var tierKonflikte = {
+  "Adler": {
+    "Kind": "Der Adler denkt strategisch und strebt nach Kontrolle – das spontane Kind folgt lieber seiner Neugier.",
+    "Faultier": "Adlers Dynamik trifft auf das entschleunigte Tempo des Faultiers – das kann zu Frust führen."
+  },
+  "Ameise": {
+    "Piranha": "Die strukturierte Ameise plant sorgfältig – der Piranha springt ohne zu zögern ins Chaos.",
+    "Parasit": "Die arbeitsame Ameise empfindet die provokante Art des Parasiten als störend."
+  },
+  "Yak": {
+    "Kind": "Der stabile Yak braucht Ruhe – das impulsive Kind bringt Unordnung in seine Welt.",
+    "Piranha": "Yak geht Aufgaben geduldig an – der Piranha drängt zu sofortigem Handeln."
+  },
+  "Katze": {
+    "Hund": "Die unabhängige Katze will Freiraum – der Hund sucht Nähe und Bindung.",
+    "Gibbon": "Katzen schweigen gern – Gibbons kommunizieren ständig. Da prallen Welten aufeinander."
+  },
+  "Biene": {
+    "Klapperschlange": "Die teamorientierte Biene wird von der direkten Art der Klapperschlange oft verletzt.",
+    "Dinosaurier": "Die Biene denkt kooperativ – der Dinosaurier agiert machtvoll und ohne Rücksicht."
+  },
+  "Chamäleon": {
+    "Eule": "Das anpassungsfreudige Chamäleon wechselt oft die Richtung – die Eule sucht klare Linien.",
+    "Eiche": "Chamäleons Wandelbarkeit irritiert die standfeste Eiche."
+  },
+  "Parasit": {
+    "Wal": "Der Parasit bringt Unruhe – der Wal braucht Harmonie und Tiefe.",
+    "Gibbon": "Der Parasit denkt individualistisch – der Gibbon sucht Verbindung und Teamgeist."
+  },
+  "Wal": {
+    "Schakal": "Der Wal möchte inneren Frieden – der Schakal spielt taktisch mit Menschen.",
+    "Kind": "Wal liebt Beständigkeit – das Kind bringt Chaos in ruhige Gewässer."
+  },
+  "Dinosaurier": {
+    "Chamäleon": "Der massive Dinosaurier ist unbeweglich – das Chamäleon fließt durch Veränderung.",
+    "Einhorn": "Dinosaurier denkt praktisch – das Einhorn träumt von Utopien."
+  },
+  "Einhorn": {
+    "Hyäne": "Das sensible Einhorn sucht Inspiration – die Hyäne handelt kühl und berechnend.",
+    "Klapperschlange": "Einhorn will Harmonie – Klapperschlange konfrontiert direkt."
+  },
+  "Schakal": {
+    "Wal": "Der analytische Schakal sieht im Wal einen trägen Blockierer.",
+    "Kind": "Der listige Schakal kann mit kindlicher Naivität wenig anfangen."
+  },
+  "Piranha": {
+    "Eule": "Piranha stürzt los – die Eule analysiert zuerst. Diese Tempi passen selten zusammen.",
+    "Faultier": "Der Piranha wird vom bedachten Tempo des Faultiers gebremst."
+  },
+  "Eiche": {
+    "Chamäleon": "Die unbeirrbare Eiche versteht das anpassungsfreudige Chamäleon nicht.",
+    "Piranha": "Eiche handelt überlegt – Piranha agiert aggressiv. Da knirscht es im Gebälk."
+  },
+  "Eule": {
+    "Kind": "Die nachdenkliche Eule analysiert lange – das Kind springt emotional dazwischen.",
+    "Hyäne": "Die Eule liebt Tiefe – die Hyäne liebt Ergebnisse. Beides zusammen geht schwer."
+  },
+  "Maus": {
+    "Löwe": "Die vorsichtige Maus fühlt sich vom durchsetzungsstarken Löwen oft überrollt.",
+    "Hyäne": "Die Maus vermeidet Konflikte – die Hyäne geht mitten hinein."
+  },
+  "Löwe": {
+    "Maus": "Der Löwe übernimmt – die Maus zieht sich zurück. Schwer hier ein Gleichgewicht zu finden.",
+    "Eule": "Der impulsive Löwe ist der Eule zu schnell und unbedacht."
+  },
+  "Faultier": {
+    "Adler": "Das Faultier sucht innere Ruhe – der Adler will Höhenflüge und Geschwindigkeit.",
+    "Piranha": "Faultier fühlt sich vom Energielevel des Piranhas überfordert."
+  },
+  "Geier": {
+    "Kind": "Der strategische Geier denkt langfristig – das Kind lebt im Hier und Jetzt.",
+    "Chamäleon": "Der Geier vertraut Planbarkeit – das Chamäleon erscheint ihm sprunghaft."
+  },
+  "Insekt (lästig)": {
+    "Hund": "Das provokante Insekt reizt den loyalen Hund – der sucht nur Frieden.",
+    "Kind": "Das Insekt kitzelt an Grenzen – das Kind reagiert emotional und unkontrolliert."
+  },
+  "Insekt (nützlich)": {
+    "Parasit": "Das nützliche Insekt handelt strukturiert – der Parasit bringt gezielte Unordnung.",
+    "Klapperschlange": "Das Team-Insekt will Kooperation – die Schlange setzt lieber eigene Wege durch."
+  },
+  "Gibbon": {
+    "Yak": "Der kommunikative Gibbon trifft auf die schweigsame Ruhe des Yaks.",
+    "Parasit": "Gibbons offene Art eckt beim grenztestenden Parasit an."
+  },
+  "Hund": {
+    "Katze": "Der anhängliche Hund sucht Bestätigung – die Katze schätzt Unabhängigkeit.",
+    "Parasit": "Hund steht für Treue – Parasit für Regelbruch. Das sorgt für Reibung."
+  },
+  "Klapperschlange": {
+    "Wal": "Die konfrontative Klapperschlange bringt den ruhigen Wal aus dem Gleichgewicht.",
+    "Kind": "Die entschlossene Schlange trifft auf kindliche Spontanität – das endet selten harmonisch."
+  },
+  "Kind": {
+    "Adler": "Das Kind lebt frei – der Adler verlangt Struktur. Das sorgt für Konflikte.",
+    "Geier": "Kind will erleben – Geier will verstehen. Beide reden oft aneinander vorbei."
+  },
+  "Hyäne": {
+    "Einhorn": "Die durchsetzungsstarke Hyäne agiert zielgerichtet – das Einhorn träumt sich in andere Welten.",
+    "Biene": "Hyäne geht ihren Weg – die Biene sucht Gemeinschaft. Da fehlt oft das Verständnis."
+  },
+  "Hybrid": {
+    "Ameise": "Der kreative Hybrid wechselt Perspektiven – die Ameise wünscht sich Planbarkeit.",
+    "Yak": "Der innovative Hybrid will Veränderung – der Yak steht lieber fest auf vertrautem Boden."
+  }
+};
 // =====================================================
 // 4) SKALA (0–4) – Nur Zahlen
 // =====================================================
@@ -371,10 +473,9 @@ for (var i = 0; i < questions.length; i++) {
 formElem.addEventListener("submit", function(evt){
   evt.preventDefault();
   var formData = new FormData(formElem);
-
   var tierCounts = {};
 
-  // Alle Fragen (0-13) inkl. Frage 14 (C1-C4)
+  // Zähle alle Tierpunkte
   for (var i = 0; i < questions.length; i++) {
     var q = questions[i];
     var answerKeys = Object.keys(q.answers);
@@ -382,107 +483,142 @@ formElem.addEventListener("submit", function(evt){
     for (var j = 0; j < answerKeys.length; j++) {
       var letter = answerKeys[j];
       var ans = q.answers[letter];
-
       var fieldName = "frage" + i + "_" + ans.code;
       var valStr = formData.get(fieldName);
       var valNum = parseInt(valStr, 10) || 0;
 
-      // C*-Codes bedeuten mehrere Tiere
       if (comboMapping[ans.code]) {
         var tierList = comboMapping[ans.code];
-        for (var t = 0; t < tierList.length; t++) {
-          var animal = tierList[t];
-          if (!tierCounts[animal]) {
-            tierCounts[animal] = 0;
-          }
-          tierCounts[animal] += valNum;
-        }
+var anteil = valNum / tierList.length;
+tierList.forEach(function(tier){
+  tierCounts[tier] = (tierCounts[tier] || 0) + anteil;
+});
+
       } else {
-        // Normale Codes => genau ein Tier
         var singleTier = codeToTier[ans.code];
-        if (!tierCounts[singleTier]) {
-          tierCounts[singleTier] = 0;
-        }
-        tierCounts[singleTier] += valNum;
+        tierCounts[singleTier] = (tierCounts[singleTier] || 0) + valNum;
       }
     }
   }
 
-  // Sortieren -> Array
-  var tierArray = [];
-  for (var tn in tierCounts) {
-    if (tierCounts.hasOwnProperty(tn)) {
-      tierArray.push([tn, tierCounts[tn]]);
-    }
-  }
-  tierArray.sort(function(a,b){
-    return b[1] - a[1];
-  });
+  // Gesamtsumme für Prozentberechnung
+  var totalPoints = Object.values(tierCounts).reduce((sum, val) => sum + val, 0);
 
-  // Top 5 (3 Hauptprofile + 2 Nebenprofile)
-  var top5 = tierArray.slice(0,5);
+  // Sortierung nach Punkten
+  var sortedTiers = Object.entries(tierCounts).sort((a, b) => b[1] - a[1]);
+  var top5 = sortedTiers.slice(0, 5);
+  var hauptprofile = top5.slice(0, 3);
+  var nebenprofile = top5.slice(3, 5);
 
   var ergebnisElem = document.getElementById("ergebnis");
-  // Neuen Titel (neutrale Formulierung)
-  ergebnisElem.innerHTML = "<h2>Dein aktueller Mix aus Tiermetaphern – 3 Hauptprofile und 2 Nebenprofile</h2>";
+  ergebnisElem.innerHTML = "<h2>Dein Verhaltens-Mix</h2>";
 
-  // Ausgabe (nur Tiername + Beschreibung)
-  for (var i = 0; i < top5.length; i++) {
-    var tierName = top5[i][0];
-    var tierDiv = document.createElement("div");
-    tierDiv.className = "tier-block";
+  function renderTierBlock(title, tierList, top5Total) {
+    var section = document.createElement("div");
+    section.innerHTML = "<h3>" + title + "</h3>";
+    tierList.forEach(function([tierName, value], idx) {
+     var prozent = ((value / top5Total) * 100).toFixed(1);
+      var tierDiv = document.createElement("div");
+      tierDiv.className = "tier-block";
+      var canvasId = "tierChart_" + tierName.replace(/\s+/g, "_");
 
-    tierDiv.innerHTML =
-      "<h3><span class='tier-name'>" + tierName + "</span></h3>" +
-      "<p>" + (tierTexte[tierName] || "") + "</p>";
-    ergebnisElem.appendChild(tierDiv);
+      tierDiv.innerHTML = `
+        <strong>${tierName}</strong> – ${tierTexte[tierName] || ""}
+        <br><em>${prozent}% innerhalb deiner Top 5</em>
+        <canvas id="${canvasId}" width="300" height="150"></canvas>
+      `;
+
+      section.appendChild(tierDiv);
+
+      setTimeout(() => {
+        new Chart(document.getElementById(canvasId).getContext("2d"), {
+          type: 'doughnut',
+          data: {
+            labels: [tierName, "Andere"],
+            datasets: [{
+              data: [value, top5Total - value],
+              backgroundColor: ["#3498db", "#ecf0f1"]
+            }]
+          },
+          options: {
+            responsive: false,
+            plugins: {
+              legend: { display: false },
+              title: { display: false }
+            },
+            cutout: "70%"
+          }
+        });
+      }, 10);
+    });
+    ergebnisElem.appendChild(section);
   }
 
-  // Kurze Erklärung unterhalb einfügen
+  var top5Total = top5.reduce((sum, el) => sum + el[1], 0);
+renderTierBlock("🧭 Hauptprofile (Top 3)", hauptprofile, top5Total);
+renderTierBlock("🧩 Nebenprofile (Platz 4 & 5)", nebenprofile, top5Total);
+
+  // Erklärung am Ende
   var erklaerung = document.createElement("div");
   erklaerung.className = "ergebnis-erklaerung";
-  erklaerung.innerHTML =
-    "Dieses Ergebnis zeigt deinen momentanen Verhaltens-Mix in Form von Tiermetaphern. " +
-    "Die 3 Hauptprofile spiegeln jene Verhaltensweisen wider, die aktuell bei dir überwiegen, " +
-    "während die 2 Nebenprofile weitere Facetten deines Verhaltens kennzeichnen. " +
-    "Bedenke, dass es sich um eine symbolische Schnappschuss-Betrachtung handelt und keine dauerhafte Diagnose. " +
-    "Dein Verhaltens-Mix kann sich im Lauf der Zeit oder je nach Situation verändern.";
+  erklaerung.innerHTML = `
+    Diese Übersicht zeigt deinen momentanen Verhaltens-Mix anhand von Tiermetaphern.
+    Die <strong>Hauptprofile</strong> spiegeln dominante Eigenschaften wider,
+    die <strong>Nebenprofile</strong> ergänzen sie durch weitere Facetten.
+    Die Prozentzahlen basieren auf allen Antworten und visualisieren dein aktuelles Gesamtbild.
+  `;
+
+
+
+
   ergebnisElem.appendChild(erklaerung);
+var konfliktDiv = document.createElement("div");
+konfliktDiv.className = "ergebnis-erklaerung";
+konfliktDiv.style.marginTop = "20px";
+konfliktDiv.innerHTML = "<h3>⚡ Potenzielle Spannungsfelder</h3><ul>";
 
-  // Tortendiagramm (Top 5) ohne Tooltip
-  if (window.resultChart) {
-    window.resultChart.destroy();
+hauptprofile.forEach(function([tierName]) {
+  var konflikte = tierKonflikte[tierName];
+  if (konflikte) {
+    Object.entries(konflikte).forEach(([gegner, beschreibung]) => {
+      konfliktDiv.innerHTML += `
+        <li><strong>${tierName}</strong> steht potenziell im Widerspruch zu <em>${gegner}</em>: ${beschreibung}</li>
+      `;
+    });
   }
-  var chartElem = document.getElementById("chart").getContext("2d");
+});
 
-  var pieLabels = top5.map(function(el){ return el[0]; });
-  var pieData   = top5.map(function(el){ return el[1]; });
+konfliktDiv.innerHTML += "</ul>";
+ergebnisElem.appendChild(konfliktDiv);
 
-  window.resultChart = new Chart(chartElem, {
-    type: 'pie',
-    data: {
-      labels: pieLabels,
-      datasets: [{
-        data: pieData,
-        backgroundColor: ["#3498db", "#e74c3c", "#f1c40f", "#9b59b6", "#2ecc71"]
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        tooltip: {
-          enabled: false
-        },
-        legend: {
-          position: 'bottom'
-        },
-        title: {
-          display: true,
-          text: "Dein Verhaltens-Mix (Top 5)"
-        }
-      }
-    }
-  });
+  // Reflektionstext ergänzen
+  var reflekt = document.createElement("div");
+  reflekt.className = "ergebnis-erklaerung";
+  reflekt.style.marginTop = "20px";
+  reflekt.innerHTML = `
+    <h3>🔍 Wie du dein Ergebnis verstehen kannst</h3>
+    <p>
+      Die dargestellten Tiermetaphern symbolisieren verschiedene Seiten deines Verhaltens – 
+      keine davon ist "besser" oder "richtiger" als die andere.
+    </p>
+    <p>
+      Dein Mix zeigt, welche Stärken bei dir aktuell im Vordergrund stehen. 
+      Vielleicht erkennst du dich in einem mutigen <strong>Löwen</strong>, einer strukturierten <strong>Ameise</strong> 
+      oder einem anpassungsfähigen <strong>Chamäleon</strong> wieder.
+    </p>
+    <p>
+      Je nach Lebensphase, Rolle oder Herausforderung können sich diese Anteile verändern. 
+      Ein starker „Adler“-Anteil zeigt etwa Fokus und Überblick, 
+      während ein hoher „Wal“-Wert auf innere Ruhe und Stabilität hinweist.
+    </p>
+    <p>
+      Dein Verhaltens-Mix ist kein endgültiges Urteil, sondern eine Momentaufnahme – 
+      und zugleich eine Einladung zur Selbstreflexion:
+      <em>Was erkennst du wieder? Was willst du weiterentwickeln?</em>
+    </p>
+    <p><strong>Nutze dein Tierprofil nicht als Schublade – sondern als Spiegel.</strong></p>
+  `;
+  ergebnisElem.appendChild(reflekt);
 });
 </script>
 
