@@ -3,8 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <title>Fragebogen (15 Fragen, Mix aus Tiermetaphern)</title>
-  <!-- Chart.js per CDN laden (Internetverbindung nötig) -->
+  
+  <!-- Chart.js für die Diagramme -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- html2canvas für Screenshots -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  
+  <!-- html2pdf.js (inklusive jsPDF & html2canvas) für PDF-Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -75,25 +83,17 @@
       border-radius: 6px;
       background: #f0f0f0;
     }
-    .tier-block h3 {
-      margin-top: 0;
-    }
-    .tier-name {
-      color: #333;
-      font-size: 1.05em;
-      font-weight: bold;
-    }
-    /* Canvas für das Tortendiagramm */
-    #chart {
-      display: block;
-      max-width: 600px;
-      margin: 20px auto;
-    }
-    /* Ergebnis-Erklärung */
     .ergebnis-erklaerung {
       margin-top: 20px;
       font-size: 0.95em;
       color: #555;
+      /* Verhindert Seitenumbrüche innerhalb des Blocks */
+      page-break-inside: avoid;
+    }
+    #chart {
+      display: block;
+      max-width: 600px;
+      margin: 20px auto;
     }
   </style>
 </head>
@@ -108,156 +108,160 @@
 <form id="fragebogen"></form>
 <button form="fragebogen" type="submit">Auswerten</button>
 
+<!-- Ergebnis-Bereich -->
 <div id="ergebnis"></div>
+
+<!-- PDF-Button -->
+<button id="pdfButton">📄 Als PDF speichern</button>
+
 <canvas id="chart"></canvas>
 
 <script>
 // =====================================================
-// 1) FRAGEN (15 Stück, inkl. Kombi in Frage 14 und Entwicklungsfeld in Frage 15)
+// 1) FRAGEN (15 Stück) – Formular
 // =====================================================
 var questions = [
   {
-    frage: "Frage 1: Was beschreibt deine bevorzugte Arbeitsweise am besten?",
+    frage: "Frage 1: Wie setzt du deine Fähigkeiten in einem Team am liebsten ein?",
     answers: {
-      A: { code: "S1", text: "Ich übernehme gerne Verantwortung, koordiniere Aufgaben und habe stets den Gesamtüberblick." },
-      B: { code: "S2", text: "Ich arbeite strukturiert, nutze etablierte Methoden und gehe Schritt für Schritt vor." },
-      C: { code: "R1", text: "Ich bin robust und ausdauernd, bleibe auch in schwierigen Situationen standhaft." },
-      D: { code: "R2", text: "Ich agiere flexibel und elegant, reagiere spontan auf neue Entwicklungen." }
+      A: { code: "S1", text: "Ich übernehme gerne Verantwortung, koordiniere Aufgaben und achte auf den Gesamtüberblick." },
+      B: { code: "S2", text: "Ich arbeite strukturiert, gehe Schritt für Schritt vor und bleibe bei erprobten Methoden." },
+      C: { code: "R1", text: "Ich halte auch unter Druck durch, bleibe ausdauernd und verliere mein Ziel nicht aus den Augen." },
+      D: { code: "R2", text: "Ich reagiere flexibel, probiere neue Ansätze aus und bleibe offen für Änderungen." }
     }
   },
   {
-    frage: "Frage 2: Wie gehst du mit Konflikten um?",
+    frage: "Frage 2: Wie verhältst du dich, wenn im Team Konflikte auftreten?",
     answers: {
-      A: { code: "S3", text: "Ich suche aktiv den Austausch, bevorzuge kooperative Lösungen und fördere neue Ideen." },
-      B: { code: "S4", text: "Ich passe mich an und versuche, Auseinandersetzungen zu entschärfen, bevor sie eskalieren." },
-      C: { code: "R3", text: "Ich bin bereit, provokant und unkonventionell vorzugehen, um Konflikte aufzubrechen." },
-      D: { code: "R4", text: "Ich bleibe ruhig, schaffe Stabilität und vermittle zwischen den Parteien." }
+      A: { code: "S3", text: "Ich suche das direkte Gespräch, höre alle Seiten an und strebe eine gemeinsame Lösung an." },
+      B: { code: "S4", text: "Ich versuche, mich anzupassen oder zu vermitteln, damit der Konflikt schnell entschärft wird." },
+      C: { code: "R3", text: "Ich stelle provozierende Fragen, um festgefahrene Denkblockaden aufzubrechen – auch wenn das aneckt." },
+      D: { code: "R4", text: "Ich bleibe ruhig, vermeide vorschnelle Urteile und vermittle Stabilität in der Gruppe." }
     }
   },
   {
-    frage: "Frage 3: Was motiviert dich am meisten?",
+    frage: "Frage 3: Was motiviert dich, deine Arbeit mit vollem Einsatz zu erledigen?",
     answers: {
-      A: { code: "S5", text: "Große Herausforderungen, bei denen ich Kraft und Ausdauer beweisen kann." },
-      B: { code: "S6", text: "Eine visionäre, idealistische Einstellung – ich lasse mich von großen Zielen inspirieren." },
-      C: { code: "R5", text: "Strategische Lösungen finden, Chancen nutzen und dabei clever vorgehen." },
-      D: { code: "R6", text: "Schnell zupacken, dynamisch sein und jede Gelegenheit sofort nutzen." }
+      A: { code: "S5", text: "Grosse Herausforderungen, bei denen ich meine Kraft und Ausdauer zeigen kann." },
+      B: { code: "S6", text: "Inspirierende Visionen und die Hoffnung, etwas Sinnvolles oder Kreatives beizutragen." },
+      C: { code: "R5", text: "Die Chance, strategisch vorzugehen, clevere Lösungen zu finden und Chancen zu erkennen." },
+      D: { code: "R6", text: "Ein dynamisches Umfeld, in dem ich schnell reagieren und sofort anpacken kann." }
     }
   },
   {
-    frage: "Frage 4: Wie reagierst du auf Veränderungen?",
+    frage: "Frage 4: Wie gehst du mit unerwarteten Veränderungen im Arbeitsablauf um?",
     answers: {
-      A: { code: "S7", text: "Ich bleibe stabil, kann mich aber schnell neuen Bedingungen anpassen." },
-      B: { code: "S8", text: "Ich analysiere Veränderungen gründlich und versuche, kluge Entscheidungen zu treffen." },
-      C: { code: "R7", text: "Ich gehe eher vorsichtig und schrittweise vor, brauche Zeit für Umstellungen." },
-      D: { code: "R8", text: "Ich bin mutig und übernehme Verantwortung, sobald sich eine Chance zeigt." }
+      A: { code: "S7", text: "Ich bleibe ruhig, passe mich an, sobald ich die neue Situation verstehe." },
+      B: { code: "S8", text: "Ich analysiere gründlich, schaue mir Risiken und Chancen an, bevor ich handle." },
+      C: { code: "R7", text: "Ich ziehe mich etwas zurück, gehe schrittweise vor und vermeide übereilte Entschlüsse." },
+      D: { code: "R8", text: "Ich übernehme spontan Verantwortung und greife schnell ein, wenn ich eine Möglichkeit sehe." }
     }
   },
   {
-    frage: "Frage 5: Welche Aspekte sind dir in deiner Arbeit wichtig?",
+    frage: "Frage 5: Welche Aspekte sind dir in einem Arbeitsumfeld besonders wichtig?",
     answers: {
-      A: { code: "S9", text: "Besonnene Entscheidungen: Ich möchte nichts überstürzen." },
-      B: { code: "S10", text: "Strategie und Innovation: Ich nutze gern jede Möglichkeit, kreativ vorzugehen." },
-      C: { code: "R11", text: "Manchmal setze ich provokante Akzente, um festgefahrene Denkweisen aufzubrechen." },
-      D: { code: "R12", text: "Effizienz und Zuverlässigkeit: Ich arbeite konsequent und konstruktiv am Gesamterfolg." }
+      A: { code: "S9", text: "Besonnene, eher langsame Entscheidungen, damit nichts überstürzt wird." },
+      B: { code: "S10", text: "Strategisches und innovatives Denken, um Neues zu entwickeln." },
+      C: { code: "R11", text: "Provokante Impulse, die eingefahrene Routinen aufbrechen – auch wenn das andere als aufdringlich empfunden wird." },
+      D: { code: "R12", text: "Effizienz und Zuverlässigkeit, damit das Team ein klares Ziel im Auge behält." }
     }
   },
   {
-    frage: "Frage 6: Wie triffst du Entscheidungen?",
+    frage: "Frage 6: Wie triffst du persönlich Entscheidungen in unsicheren Situationen?",
     answers: {
-      A: { code: "S11", text: "Ich kläre erst alle Fragen im Team und gehe kommunikativ vor." },
-      B: { code: "S12", text: "Ich bin loyal und setze auf Bewährtes, bevor ich ein Risiko eingehe." },
-      C: { code: "R9", text: "Ich entscheide blitzschnell und entschlossen, oft ohne lange zu zögern." },
-      D: { code: "R10", text: "Ich bin neugierig, spontan und lasse mich auch vom Bauchgefühl leiten." }
+      A: { code: "S11", text: "Ich beziehe gern mein Umfeld ein, diskutiere mit dem Team und suche einen Konsens." },
+      B: { code: "S12", text: "Ich setze auf Bewährtes, bleibe loyal gegenüber bestehenden Strukturen und gehe ungern Risiken ein." },
+      C: { code: "R9", text: "Ich handle schnell und entschlossen, ohne mich lange von Unsicherheiten aufhalten zu lassen." },
+      D: { code: "R10", text: "Ich folge meinem Bauchgefühl und bin offen für spontane Ideen, auch wenn sie ungewöhnlich sind." }
     }
   },
   {
-    frage: "Frage 7: Wie wichtig ist dir Unabhängigkeit?",
+    frage: "Frage 7: Welche Rolle spielt Unabhängigkeit in deinem Arbeitsalltag?",
     answers: {
-      A: { code: "S13", text: "Sehr wichtig: Ich vereine vielseitige Fähigkeiten und arbeite gerne eigenständig und kreativ." },
-      B: { code: "S14", text: "Ich lege Wert auf Durchsetzungsfähigkeit und unabhängiges Handeln." },
-      C: { code: "R15", text: "Teamgeist und gemeinsamer Erfolg sind für mich entscheidend." },
-      D: { code: "R16", text: "Eine gute Kommunikation stärkt den Zusammenhalt – ich priorisiere das Miteinander." }
+      A: { code: "S13", text: "Ich halte mich für äusserst vielseitig und kreativ, manchmal überschätze ich dabei meine Möglichkeiten." },
+      B: { code: "S14", text: "Ich finde Durchsetzungsfähigkeit entscheidend, um eigenständig handeln zu können." },
+      C: { code: "R15", text: "Teamgeist geht vor; ich lege grossen Wert auf Austausch und ein starkes Gemeinschaftsgefühl." },
+      D: { code: "R16", text: "Mir ist eine reibungslose Kommunikation besonders wichtig, damit alle an einem Strang ziehen." }
     }
   },
   {
-    frage: "Frage 8: Wie gehst du mit Verantwortung um?",
+    frage: "Frage 8: Wie stehst du zu Verantwortung im Job?",
     answers: {
-      A: { code: "S15", text: "Ich übernehme gerne führende Rollen und motiviere andere." },
-      B: { code: "S16", text: "Ich bin zuverlässig, stehe zu meinen Aufgaben und halte meine Zusagen ein." },
-      C: { code: "R13", text: "Ich setze Verantwortung strategisch ein, um Ziele zu erreichen." },
-      D: { code: "R14", text: "Ich verknüpfe Verantwortung mit neuen Ideen und innovativen Konzepten." }
+      A: { code: "S15", text: "Ich übernehme Verantwortung eher unterstützend, sorge für Effizienz und helfe dem Team, ohne im Rampenlicht zu stehen." },
+      B: { code: "S16", text: "Ich setze konsequent meine eigenen Ideen durch, selbst wenn das Team das als eigenwillig oder störend empfindet." },
+      C: { code: "R13", text: "Ich nutze Verantwortung strategisch und scheue mich nicht, nachdrücklich zu handeln, wenn es meinen Zielen dient." },
+      D: { code: "R14", text: "Ich kombiniere viele Fähigkeiten und bin überzeugt, fast alles lösen zu können, was teils überheblich wirkt." }
     }
   },
   {
-    frage: "Frage 9: Wie gehst du mit Kritik um?",
+    frage: "Frage 9: Wie reagierst du, wenn du kritisiert wirst?",
     answers: {
-      A: { code: "S17", text: "Ich bin offen, reflektiere mein Handeln und verbessere mich kontinuierlich." },
-      B: { code: "S18", text: "Ich bleibe entschlossen bei meinem Weg, lasse mich nicht so leicht beirren." },
-      C: { code: "R19", text: "Ich nehme mir Zeit für gründliche Selbstreflexion, um daraus zu lernen." },
-      D: { code: "R20", text: "Ich bleibe stabil, nutze konstruktives Feedback als Chance zur Weiterentwicklung." }
+      A: { code: "S17", text: "Ich bin offen dafür, reflektiere mein Verhalten und passe mich an, wenn es sinnvoll ist." },
+      B: { code: "S18", text: "Ich halte an meinem Standpunkt fest und lasse mich nicht schnell verunsichern." },
+      C: { code: "R19", text: "Ich denke ausgiebig nach und ziehe meine Lehren aus konstruktiver Kritik." },
+      D: { code: "R20", text: "Ich bleibe gefasst und nutze Feedback als Chance zur Weiterentwicklung." }
     }
   },
   {
-    frage: "Frage 10: Welche Rolle nimmst du im Team ein?",
+    frage: "Frage 10: Welche Rolle nimmst du typischerweise in einem Team ein?",
     answers: {
-      A: { code: "S19", text: "Ich zeige Führungsstärke, bin mutig und übernehme Verantwortung." },
-      B: { code: "S20", text: "Ich kümmere mich um Details, arbeite sorgfältig und unterstütze zuverlässig." },
-      C: { code: "R21", text: "Ich agiere visionär und bringe frische Impulse von außen ein." },
-      D: { code: "R22", text: "Ich bin kraftvoll und setze meine Energie entschlossen ein, Herausforderungen offensiv anzugehen." }
+      A: { code: "S19", text: "Ich übernehme gerne Führung, bin mutig und gehe voran." },
+      B: { code: "S20", text: "Ich arbeite gründlich, kümmere mich um Details und gebe dem Team Rückhalt." },
+      C: { code: "R21", text: "Ich bringe visionäre Ideen ein, wirke jedoch manchmal zögerlich oder unsicher, wenn es an die Umsetzung geht." },
+      D: { code: "R22", text: "Ich bin energiegeladen, packe Herausforderungen direkt an und bleibe entschlossen." }
     }
   },
   {
-    frage: "Frage 11: Wie planst du langfristig?",
+    frage: "Frage 11: Wie gestaltest du deine langfristige Planung?",
     answers: {
-      A: { code: "S21", text: "Mit viel Energie und Enthusiasmus, immer auf der Suche nach neuen Chancen." },
-      B: { code: "S22", text: "Clever und pragmatisch: Ich passe meine Strategie flexibel den Umständen an." },
-      C: { code: "R17", text: "Ich wahre den Überblick, formuliere klare Visionen und setze sie strategisch um." },
-      D: { code: "R18", text: "Ich bleibe besonnen und überlegt, lasse mich selbst durch Stress kaum aus der Ruhe bringen." }
+      A: { code: "S21", text: "Ich investiere viel Energie und nutze jede Gelegenheit, notfalls auch manipulativ, um voranzukommen." },
+      B: { code: "S22", text: "Ich passe meine Pläne flexibel an, behalte aber mein Hauptziel stets im Blick." },
+      C: { code: "R17", text: "Ich wahre den Überblick, formuliere klare Visionen und verfolge sie konsequent." },
+      D: { code: "R18", text: "Ich bleibe besonnen und bedacht, lasse mich auch durch Stress nicht aus der Ruhe bringen." }
     }
   },
   {
-    frage: "Frage 12: Wie bewältigst du stressige Situationen?",
+    frage: "Frage 12: Wie reagierst du auf hohen Zeit- oder Leistungsdruck?",
     answers: {
-      A: { code: "S23", text: "Ich strahle Ruhe und Struktur aus, bleibe gelassen selbst unter Druck." },
-      B: { code: "S24", text: "Ich passe mich an, finde kreative Wege, selbst wenn es turbulent wird." },
-      C: { code: "R25", text: "Ich arbeite systematisch und detailliert, um Fehler und Stress zu minimieren." },
-      D: { code: "R26", text: "Ich setze mir klare Ziele und bleibe trotz Druck fokussiert auf Höchstleistung." }
+      A: { code: "S23", text: "Ich strahle Ruhe aus, strukturiere meine Aufgaben und lasse mich nicht hetzen." },
+      B: { code: "S24", text: "Ich werde sogar kreativer, wenn es turbulent wird, und passe meine Vorgehensweise flexibel an." },
+      C: { code: "R25", text: "Ich gehe systematisch vor, um Fehler zu vermeiden und den Überblick zu behalten." },
+      D: { code: "R26", text: "Ich ziehe das Tempo an, bleibe fokussiert und möchte Höchstleistung zeigen." }
     }
   },
   {
-    frage: "Frage 13: Welche besondere Stärke bringst du in den Beruf mit?",
+    frage: "Frage 13: Welche besondere Stärke bringst du verlässlich in dein Berufsleben ein?",
     answers: {
-      A: { code: "S25", text: "Ich bin engagiert, innovativ und unterstütze das Team verlässlich." },
-      B: { code: "S26", text: "Ich bin robust, ausdauernd und scheue mich nicht vor großen Herausforderungen." },
-      C: { code: "R23", text: "Ich bin flexibel, reagiere schnell und gehe offen auf Veränderungen zu." },
-      D: { code: "R24", text: "Ich bin kooperativ, kreativ und bringe Ideen ein, die das Team voranbringen." }
+      A: { code: "S25", text: "Ich unterstütze das Team mit zuverlässiger Arbeit und finde oft originelle Lösungsansätze." },
+      B: { code: "S26", text: "Ich bin robust, halte lange durch und scheue keine grossen Herausforderungen." },
+      C: { code: "R23", text: "Ich bin flexibel, denke schnell um und kann mich rasch auf Veränderungen einstellen." },
+      D: { code: "R24", text: "Ich bin kooperativ, entwickle neue Ideen und fördere den Zusammenhalt im Team." }
     }
   },
   {
-    frage: "Frage 14: Welche Stärken beschreiben dich am besten?",
+    frage: "Frage 14: Welche Stärken beschreiben dich am besten (Mix‐Frage)?",
     answers: {
-      A: { code: "C1", text: "Fleiß, Flexibilität, Eleganz, visionäre Ansätze (vereint mehrere Eigenschaften)." },
-      B: { code: "C2", text: "Robust, unabhängig, zupackend, meistert große Herausforderungen." },
+      A: { code: "C1", text: "Fleiss, Flexibilität, Eleganz, visionäres Denken (vereint mehrere Eigenschaften)." },
+      B: { code: "C2", text: "Robust, unabhängig, zupackend, meistert grosse Herausforderungen." },
       C: { code: "C3", text: "Gelassen, bedächtig, weise, strategisch – oft mit ruhiger Energie." },
-      D: { code: "C4", text: "Manchmal provokant, loyal, spontan und ideenreich in neuen Situationen." }
+      D: { code: "C4", text: "Manchmal provokant, loyal, spontan, ideenreich in neuen Situationen." }
     }
   },
   {
-    frage: "Frage 15: In welchem Bereich erkennst du für dich persönlich ein Entwicklungsfeld?",
+    frage: "Frage 15: In welchem Bereich möchtest du dich persönlich weiterentwickeln?",
     answers: {
-      A: { code: "C1", text: "Ich nehme mir vor, Kontrolle auch mal abzugeben und nicht alles perfekt machen zu wollen." },
-      B: { code: "C2", text: "Ich möchte lernen, mit Impulsen bewusster umzugehen und Geduld zu entwickeln." },
-      C: { code: "C3", text: "Ich arbeite daran, Entscheidungen mutiger zu treffen und nicht zu lange zu zögern." },
-      D: { code: "C4", text: "Ich versuche, meine Spontanität zu strukturieren und emotionalen Ausbrüchen vorzubeugen." }
+      A: { code: "C1", text: "Ich möchte lernen, nicht immer alles kontrollieren zu wollen und auch loszulassen." },
+      B: { code: "C2", text: "Ich will bewusster mit impulsiven Reaktionen umgehen und mehr Geduld entwickeln." },
+      C: { code: "C3", text: "Ich arbeite daran, Entscheidungen mutiger zu treffen und nicht zu lange zu grübeln." },
+      D: { code: "C4", text: "Ich möchte meine Spontanität besser strukturieren und emotionale Ausbrüche im Zaum halten." }
     }
   }
 ];
 
 // =====================================================
-// 2) CODE -> TIER (+ KombiMapping für C1–C4)
+// 2) CODE -> TIER
 // =====================================================
 var codeToTier = {
-  // S* / R* - Codes, wie gehabt
   S1: "Adler",   S2: "Ameise",   R1: "Yak",     R2: "Katze",
   S3: "Biene",   S4: "Chamäleon",R3: "Parasit", R4: "Wal",
   S5: "Dinosaurier", S6: "Einhorn", R5: "Schakal", R6: "Piranha",
@@ -273,7 +277,9 @@ var codeToTier = {
   S25: "Katze",  S26: "Yak",     R23: "Chamäleon", R24: "Biene"
 };
 
-// Antwortkombinationen in Frage 14 -> mehrere Tiere gleichzeitig
+// =====================================================
+// 2a) Antwortkombinationen (Frage 14 und 15)
+// =====================================================
 var comboMapping = {
   C1: ["Adler","Ameise","Biene","Chamäleon","Wal","Einhorn"],
   C2: ["Yak","Katze","Parasit","Dinosaurier","Schakal","Piranha"],
@@ -285,141 +291,195 @@ var comboMapping = {
 // 3) TIER-BESCHREIBUNGEN
 // =====================================================
 var tierTexte = {
-  "Adler": "🦅 Fokussiert, Weitblick, Führungsqualitäten",
-  "Ameise": "🐜 Fleißig, strukturiert, Organisationstalent",
-  "Yak": "🐂 Robust, ausdauernd – Fels in der Brandung",
-  "Katze": "🐈 Elegant, unabhängig, anpassungsfähig",
-  "Biene": "🐝 Kooperativ, kreativ, gemeinschaftsorientiert",
-  "Chamäleon": "🦎 Anpassungsfähig, flexible Lösungen",
-  "Parasit": "🪱 Unkonventionell, neue Denkansätze",
-  "Wal": "🐋 Ruhepol, vermittelt Stabilität",
-  "Dinosaurier": "🦖 Kraftvoll, meistert große Herausforderungen",
-  "Einhorn": "🦄 Visionär, idealistisch, inspiriert andere",
-  "Schakal": "🦊 Clever, strategisch, nutzt Chancen",
-  "Piranha": "🐟 Dynamisch, entschlossen, packt schnell an",
-  "Eiche": "🌳 Stabil, bodenständig, weise Entscheidungen",
-  "Eule": "🦉 Nachdenklich, analytisch, kluge Einsichten",
-  "Maus": "🐁 Vorsichtig, detailorientiert, zuverlässig",
-  "Löwe": "🦁 Mutig, übernimmt gerne Verantwortung",
-  "Faultier": "🦥 Bedächtig, reflektiert, geht Stress aus dem Weg",
-  "Geier": "🦅 (Geier) Vorausschauend, strategisch, ressourcenschonend",
-  "Insekt (lästig)": "🐞 Manchmal provokant, stört Komfortzonen",
-  "Insekt (nützlich)": "🐞 Effizient, konstruktiv, Teamplayer",
-  "Gibbon": "🐒 Kommunikativ, fördert Zusammenhalt",
-  "Hund": "🐕 Loyal, vertraut auf Bewährtes",
-  "Klapperschlange": "🐍 Schnell, entschlossen, kann zustechen",
-  "Kind": "👶 Neugierig, spontan, unvoreingenommen",
-  "Hyäne": "🦝 (Hyäne?) Durchsetzungsstark, zielorientiert, flexibel",
-  "Hybrid": "🔀 Vielseitig, innovativ, verbindet Verschiedenes"
+  "Ameise": { kurz: "🐜 Organisiert, teamorientiert, methodisch", symbolischFür: "Teamgeist" },
+  "Biene": { kurz: "🐝 Fleissig, verantwortungsbewusst, anpassungsfähig", symbolischFür: "Zusammenhalt" },
+  "Chamäleon": { kurz: "🦎 Anpassungsfähig, visionär, teils manipulativ", symbolischFür: "Wandlungsfähigkeit" },
+  "Hund": { kurz: "🐕 Begeistert, emotional, offen", symbolischFür: "Treue" },
+  "Adler": { kurz: "🦅 Intuitiv, strategisch, wetteifernd", symbolischFür: "Weitblick" },
+  "Katze": { kurz: "🐈 Denkend, unabhängig, rebellisch", symbolischFür: "Freiheit" },
+  "Gibbon": { kurz: "🐒 Kontaktfreudig, reflektierend, teils distanziert", symbolischFür: "Kommunikation" },
+  "Hyäne": { kurz: "🦝 Strategisch, ehrgeizig, aggressiv", symbolischFür: "Zielstrebigkeit" },
+  "Insekt (nützlich)": { kurz: "🐞 Unterstützend, einfallsreich, positiv", symbolischFür: "Nützlichkeit" },
+  "Insekt (lästig)": { kurz: "🐞 Eigensinnig, unberechenbar, oft störend", symbolischFür: "Hartnäckigkeit" },
+  "Schakal": { kurz: "🦊 Individualistisch, aggressiv, rebellisch", symbolischFür: "Unabhängigkeit" },
+  "Löwe": { kurz: "🦁 Intuitiv, machtbewusst, strategisch", symbolischFür: "Kraft" },
+  "Maus": { kurz: "🐁 Denkend, vorsichtig, zuverlässig", symbolischFür: "Sicherheit" },
+  "Parasit": { kurz: "🪱 Unsichtbar, manipulativ, anpassungsfähig", symbolischFür: "Tarnung" },
+  "Eule": { kurz: "🦉 Weise, logisch, reflektierend", symbolischFür: "Weisheit" },
+  "Piranha": { kurz: "🐟 Gefährlich, handlungsorientiert, manipulativ", symbolischFür: "Aggression" },
+  "Eiche": { kurz: "🌳 Stark, produktiv, inspirierend", symbolischFür: "Stabilität" },
+  "Klapperschlange": { kurz: "🐍 Gefährlich, intelligent, gerissen", symbolischFür: "Gerissenheit" },
+  "Faultier": { kurz: "🦥 Geduldig, bescheiden, langsam", symbolischFür: "Gelassenheit" },
+  "Dinosaurier": { kurz: "🦖 Stark, distanziert, zurückgezogen", symbolischFür: "Uralte Macht" },
+  "Einhorn": { kurz: "🦄 Visionär, anpassungsfähig, naiv", symbolischFür: "Träumerei" },
+  "Geier": { kurz: "🦅 Vorausschauend, intuitiv, wenig loyal", symbolischFür: "Opportunismus" },
+  "Wal": { kurz: "🐋 Vertrauenswürdig, stark, emotional", symbolischFür: "Tiefe" },
+  "Hybrid": { kurz: "🔀 Intelligent, anpassungsfähig, distanziert", symbolischFür: "Universalität" },
+  "Yak": { kurz: "🐂 Robust, bescheiden, strategisch", symbolischFür: "Ausdauer" },
+  "Kind": { kurz: "👶 Begeistert, inspirierend, emotional", symbolischFür: "Unbeschwertheit" }
 };
+
+// =====================================================
+// 3a) Gegenspieler-Logik (für Stärkekonflikt)
+// =====================================================
+var gegenspieler = {
+  "Adler": "Kind",
+  "Kind": "Adler",
+
+  "Ameise": "Hybrid",
+  "Hybrid": "Ameise",
+
+  "Biene": "Hyäne",
+  "Hyäne": "Biene",
+
+  "Chamäleon": "Eule",
+  "Eule": "Chamäleon",
+
+  "Hund": "Katze",
+  "Katze": "Hund",
+
+  "Gibbon": "Parasit",
+  "Parasit": "Gibbon",
+
+  "Löwe": "Maus",
+  "Maus": "Löwe",
+
+  "Wal": "Schakal",
+  "Schakal": "Wal",
+
+  "Insekt (nützlich)": "Insekt (lästig)",
+  "Insekt (lästig)": "Insekt (nützlich)",
+
+  "Piranha": "Faultier",
+  "Faultier": "Piranha",
+
+  "Einhorn": "Geier",
+  "Geier": "Einhorn",
+
+  "Eiche": "Klapperschlange",
+  "Klapperschlange": "Eiche",
+
+  "Yak": "Dinosaurier",
+  "Dinosaurier": "Yak"
+};
+
+// =====================================================
+// (Optional) Konflikt-Texte – jeweils 2 pro Tier, neutral formuliert
+// =====================================================
 var tierKonflikte = {
   "Adler": {
-    "Kind": "Der Adler denkt strategisch und strebt nach Kontrolle – das spontane Kind folgt lieber seiner Neugier.",
-    "Faultier": "Adlers Dynamik trifft auf das entschleunigte Tempo des Faultiers – das kann zu Frust führen."
+    "Kind": "Zwischen Adler und Kind können Spannungen entstehen, da der strategische Adler einen klaren Plan verfolgt, während das Kind impulsiv agiert.",
+    "Wal": "Adler und Wal können unterschiedliche Arbeitsrhythmen haben – Adler strebt nach Schnelligkeit, Wal setzt auf Ruhe."
   },
   "Ameise": {
-    "Piranha": "Die strukturierte Ameise plant sorgfältig – der Piranha springt ohne zu zögern ins Chaos.",
-    "Parasit": "Die arbeitsame Ameise empfindet die provokante Art des Parasiten als störend."
-  },
-  "Yak": {
-    "Kind": "Der stabile Yak braucht Ruhe – das impulsive Kind bringt Unordnung in seine Welt.",
-    "Piranha": "Yak geht Aufgaben geduldig an – der Piranha drängt zu sofortigem Handeln."
-  },
-  "Katze": {
-    "Hund": "Die unabhängige Katze will Freiraum – der Hund sucht Nähe und Bindung.",
-    "Gibbon": "Katzen schweigen gern – Gibbons kommunizieren ständig. Da prallen Welten aufeinander."
+    "Piranha": "Ameise und Piranha zeigen unterschiedliche Herangehensweisen: Die Ameise plant strukturiert, der Piranha handelt impulsiv.",
+    "Hybrid": "Ameise und Hybrid können in ihrer Methodik auseinandergehen – klare Abläufe versus flexible, wechselnde Ansätze."
   },
   "Biene": {
-    "Klapperschlange": "Die teamorientierte Biene wird von der direkten Art der Klapperschlange oft verletzt.",
-    "Dinosaurier": "Die Biene denkt kooperativ – der Dinosaurier agiert machtvoll und ohne Rücksicht."
+    "Hyäne": "Biene und Hyäne können Spannungen erleben, da die teamorientierte Biene auf Kooperation setzt, während die Hyäne eher eigenständig agiert.",
+    "Dinosaurier": "Biene und Dinosaurier stehen oft unterschiedlich: Biene arbeitet fürs Team, Dinosaurier agiert pragmatisch."
   },
   "Chamäleon": {
-    "Eule": "Das anpassungsfreudige Chamäleon wechselt oft die Richtung – die Eule sucht klare Linien.",
-    "Eiche": "Chamäleons Wandelbarkeit irritiert die standfeste Eiche."
-  },
-  "Parasit": {
-    "Wal": "Der Parasit bringt Unruhe – der Wal braucht Harmonie und Tiefe.",
-    "Gibbon": "Der Parasit denkt individualistisch – der Gibbon sucht Verbindung und Teamgeist."
-  },
-  "Wal": {
-    "Schakal": "Der Wal möchte inneren Frieden – der Schakal spielt taktisch mit Menschen.",
-    "Kind": "Wal liebt Beständigkeit – das Kind bringt Chaos in ruhige Gewässer."
-  },
-  "Dinosaurier": {
-    "Chamäleon": "Der massive Dinosaurier ist unbeweglich – das Chamäleon fließt durch Veränderung.",
-    "Einhorn": "Dinosaurier denkt praktisch – das Einhorn träumt von Utopien."
-  },
-  "Einhorn": {
-    "Hyäne": "Das sensible Einhorn sucht Inspiration – die Hyäne handelt kühl und berechnend.",
-    "Klapperschlange": "Einhorn will Harmonie – Klapperschlange konfrontiert direkt."
-  },
-  "Schakal": {
-    "Wal": "Der analytische Schakal sieht im Wal einen trägen Blockierer.",
-    "Kind": "Der listige Schakal kann mit kindlicher Naivität wenig anfangen."
-  },
-  "Piranha": {
-    "Eule": "Piranha stürzt los – die Eule analysiert zuerst. Diese Tempi passen selten zusammen.",
-    "Faultier": "Der Piranha wird vom bedachten Tempo des Faultiers gebremst."
-  },
-  "Eiche": {
-    "Chamäleon": "Die unbeirrbare Eiche versteht das anpassungsfreudige Chamäleon nicht.",
-    "Piranha": "Eiche handelt überlegt – Piranha agiert aggressiv. Da knirscht es im Gebälk."
-  },
-  "Eule": {
-    "Kind": "Die nachdenkliche Eule analysiert lange – das Kind springt emotional dazwischen.",
-    "Hyäne": "Die Eule liebt Tiefe – die Hyäne liebt Ergebnisse. Beides zusammen geht schwer."
-  },
-  "Maus": {
-    "Löwe": "Die vorsichtige Maus fühlt sich vom durchsetzungsstarken Löwen oft überrollt.",
-    "Hyäne": "Die Maus vermeidet Konflikte – die Hyäne geht mitten hinein."
-  },
-  "Löwe": {
-    "Maus": "Der Löwe übernimmt – die Maus zieht sich zurück. Schwer hier ein Gleichgewicht zu finden.",
-    "Eule": "Der impulsive Löwe ist der Eule zu schnell und unbedacht."
-  },
-  "Faultier": {
-    "Adler": "Das Faultier sucht innere Ruhe – der Adler will Höhenflüge und Geschwindigkeit.",
-    "Piranha": "Faultier fühlt sich vom Energielevel des Piranhas überfordert."
-  },
-  "Geier": {
-    "Kind": "Der strategische Geier denkt langfristig – das Kind lebt im Hier und Jetzt.",
-    "Chamäleon": "Der Geier vertraut Planbarkeit – das Chamäleon erscheint ihm sprunghaft."
-  },
-  "Insekt (lästig)": {
-    "Hund": "Das provokante Insekt reizt den loyalen Hund – der sucht nur Frieden.",
-    "Kind": "Das Insekt kitzelt an Grenzen – das Kind reagiert emotional und unkontrolliert."
-  },
-  "Insekt (nützlich)": {
-    "Parasit": "Das nützliche Insekt handelt strukturiert – der Parasit bringt gezielte Unordnung.",
-    "Klapperschlange": "Das Team-Insekt will Kooperation – die Schlange setzt lieber eigene Wege durch."
-  },
-  "Gibbon": {
-    "Yak": "Der kommunikative Gibbon trifft auf die schweigsame Ruhe des Yaks.",
-    "Parasit": "Gibbons offene Art eckt beim grenztestenden Parasit an."
+    "Eule": "Chamäleon und Eule können in ihrer Herangehensweise kollidieren – das Chamäleon ändert oft den Kurs, die Eule sucht klare, logische Linien.",
+    "Eiche": "Chamäleon und Eiche haben unterschiedliche Erwartungen: Wandel versus Beständigkeit."
   },
   "Hund": {
-    "Katze": "Der anhängliche Hund sucht Bestätigung – die Katze schätzt Unabhängigkeit.",
-    "Parasit": "Hund steht für Treue – Parasit für Regelbruch. Das sorgt für Reibung."
+    "Katze": "Hund und Katze können unterschiedliche Bedürfnisse haben – der Hund sucht Nähe, die Katze bevorzugt Unabhängigkeit.",
+    "Parasit": "Hund und Parasit unterscheiden sich darin, wie offen sie agieren – der Hund ist direkt, der Parasit eher taktisch zurückhaltend."
   },
-  "Klapperschlange": {
-    "Wal": "Die konfrontative Klapperschlange bringt den ruhigen Wal aus dem Gleichgewicht.",
-    "Kind": "Die entschlossene Schlange trifft auf kindliche Spontanität – das endet selten harmonisch."
+  "Katze": {
+    "Hund": "Auch wenn Hund und Katze eng beieinander liegen, können Konflikte entstehen, wenn der Wunsch nach Nähe (Hund) auf das Bedürfnis nach Distanz (Katze) trifft.",
+    "Gibbon": "Katze und Gibbon können Spannungen haben, da die ruhige Katze sich nicht immer in das kommunikative Temperament des Gibbons einfügt."
   },
-  "Kind": {
-    "Adler": "Das Kind lebt frei – der Adler verlangt Struktur. Das sorgt für Konflikte.",
-    "Geier": "Kind will erleben – Geier will verstehen. Beide reden oft aneinander vorbei."
+  "Gibbon": {
+    "Yak": "Gibbon und Yak haben unterschiedliche Kommunikationsstile – Gibbon ist sehr offen, während Yak auf Stabilität und Ruhe setzt.",
+    "Parasit": "Gibbon und Parasit können sich uneinig sein, da der offene Gibbon direktere Gespräche bevorzugt, der Parasit subtiler agiert."
   },
   "Hyäne": {
-    "Einhorn": "Die durchsetzungsstarke Hyäne agiert zielgerichtet – das Einhorn träumt sich in andere Welten.",
-    "Biene": "Hyäne geht ihren Weg – die Biene sucht Gemeinschaft. Da fehlt oft das Verständnis."
+    "Einhorn": "Hyäne und Einhorn unterscheiden sich deutlich: Hyäne ist kontrollierend und zielstrebig, während Einhorn idealistisch und träumerisch agiert.",
+    "Biene": "Hyäne und Biene können Spannungen erleben, da die zielorientierte Hyäne eher eigenständig agiert, die Biene aber auf Teamarbeit setzt."
+  },
+  "Insekt (nützlich)": {
+    "Parasit": "Das nützliche Insekt und der Parasit haben unterschiedliche Prioritäten – Unterstützung versus taktisches Verhalten.",
+    "Klapperschlange": "Insekt (nützlich) und Klapperschlange gehen unterschiedlich vor: Kooperative Ansätze versus kritische Impulse."
+  },
+  "Insekt (lästig)": {
+    "Kind": "Insekt (lästig) und Kind können aufeinanderprallen, da das unberechenbare Insekt das emotionale Kind überfordern kann.",
+    "Hund": "Insekt (lästig) provoziert, während der Hund auf Harmonie bedacht ist – das führt zu Spannungen."
+  },
+  "Schakal": {
+    "Wal": "Schakal und Wal können unterschiedliche Schwerpunkte haben – taktisches Vorgehen versus emotionale Tiefe.",
+    "Kind": "Schakal und Kind haben oft unterschiedliche Prioritäten: Strukturiertes Handeln versus impulsives Verhalten."
+  },
+  "Löwe": {
+    "Maus": "Löwe und Maus stehen sich oft gegenüber: Der dominante Löwe agiert energisch, während die vorsichtige Maus sich eher zurückzieht.",
+    "Eule": "Löwe und Eule können in ihrem Tempo auseinandergehen – schnelle Entscheidungen versus analytische Überlegungen."
+  },
+  "Maus": {
+    "Hyäne": "Maus und Hyäne können Spannungen erzeugen, da die ruhige Maus Stabilität sucht, während Hyäne kraftvoll und fordernd agiert.",
+    "Löwe": "Maus und Löwe zeigen unterschiedliche Dynamiken: Vorsicht versus dominante Präsenz."
+  },
+  "Parasit": {
+    "Wal": "Parasit und Wal haben unterschiedliche Ansätze: Während Wal auf Klarheit und Tiefe setzt, wirkt Parasit oft diffus.",
+    "Gibbon": "Parasit und Gibbon bewegen sich in unterschiedlichen Kommunikationswelten – subtil versus offen."
+  },
+  "Wal": {
+    "Schakal": "Wal und Schakal können Spannungen haben, da Wal auf emotionale Stabilität setzt, während Schakal taktisch vorgeht.",
+    "Kind": "Wal und Kind unterscheiden sich: Der Wal sucht Ruhe, das Kind bringt lebhafte, emotionale Impulse ein."
+  },
+  "Dinosaurier": {
+    "Einhorn": "Dinosaurier und Einhorn haben unterschiedliche Herangehensweisen: Sicherheit versus idealistische Visionen.",
+    "Chamäleon": "Dinosaurier und Chamäleon können in ihren Ansätzen kollidieren – Beständigkeit versus Wandel."
+  },
+  "Einhorn": {
+    "Hyäne": "Einhorn und Hyäne zeigen unterschiedliche Temperamente – das Einhorn lebt in Visionen, während Hyäne zielstrebig agiert.",
+    "Klapperschlange": "Einhorn und Klapperschlange können in ihrer Herangehensweise auseinandergehen – Harmonie versus direkte Impulse."
+  },
+  "Eiche": {
+    "Chamäleon": "Eiche und Chamäleon können aufeinanderprallen, da Eiche auf Beständigkeit setzt und Chamäleon häufig flexibel agiert.",
+    "Piranha": "Eiche und Piranha haben unterschiedliche Zugänge – überlegte Planung versus impulsives Handeln."
+  },
+  "Eule": {
+    "Hyäne": "Eule und Hyäne können Spannungen haben, da die ruhige Eule tiefgründige Analysen bevorzugt, während Hyäne schneller agiert.",
+    "Kind": "Eule und Kind unterscheiden sich: Eule wägt sorgfältig ab, das Kind handelt impulsiv."
+  },
+  "Klapperschlange": {
+    "Wal": "Klapperschlange und Wal können aufeinanderprallen, da die direkte Klapperschlange oft herausfordernd wirkt und der Wal Sicherheit sucht.",
+    "Kind": "Klapperschlange und Kind stehen in Kontrast – strukturierte Herangehensweise versus spontane Reaktionen."
+  },
+  "Faultier": {
+    "Adler": "Faultier und Adler haben unterschiedliche Dynamiken – Faultier arbeitet in Ruhe, Adler strebt nach Höherem.",
+    "Piranha": "Faultier und Piranha arbeiten in verschiedenen Tempi – was zu Spannungen führen kann."
+  },
+  "Geier": {
+    "Chamäleon": "Geier und Chamäleon können in ihrer Planung auseinandergehen – strukturierte Ansätze versus wechselnde Strategien.",
+    "Kind": "Geier und Kind bewegen sich in unterschiedlichen Zeiten – vorausschauend versus im Hier und Jetzt."
+  },
+  "Piranha": {
+    "Eule": "Piranha und Eule können Spannungen erzeugen, da Piranha schnelle Entscheidungen trifft, während die Eule erst analysiert.",
+    "Faultier": "Piranha und Faultier arbeiten in unterschiedlichen Tempi – was zu unpassenden Dynamiken führt."
+  },
+  "Kind": {
+    "Adler": "Kind und Adler können in ihrer Ausrichtung auseinandergehen – impulsives Entdecken versus strukturierte Planung.",
+    "Geier": "Kind und Geier haben unterschiedliche Prioritäten – spontan versus langfristig denkend."
+  },
+  "Yak": {
+    "Piranha": "Yak ist bedacht – Piranha handelt impulsiv. Diese unterschiedliche Herangehensweise kann zu Spannung führen.",
+    "Kind": "Yak schätzt Stabilität, während das Kind unberechenbar agiert – das erfordert Verständnis."
+  },
+  "Einhorn": {
+    "Hyäne": "Einhorn und Hyäne prallen in ihren Ansätzen aufeinander – idealistische Visionen versus nüchterne Zielorientierung.",
+    "Schakal": "Einhorn und Schakal haben unterschiedliche Herangehensweisen – verträumt versus kontrollierend."
   },
   "Hybrid": {
-    "Ameise": "Der kreative Hybrid wechselt Perspektiven – die Ameise wünscht sich Planbarkeit.",
-    "Yak": "Der innovative Hybrid will Veränderung – der Yak steht lieber fest auf vertrautem Boden."
+    "Ameise": "Hybrid und Ameise unterscheiden sich in ihrer Methodik – flexibles Denken versus klare Ordnung.",
+    "Yak": "Hybrid und Yak haben unterschiedliche Schwerpunkte – unkonventionelle Ansätze versus beständige Ausdauer."
   }
 };
+
+  
 // =====================================================
-// 4) SKALA (0–4) – Nur Zahlen
+// 4) SKALA (0–4)
 // =====================================================
 var skalenWerte = [
   { value: 0, label: "0" },
@@ -468,14 +528,14 @@ for (var i = 0; i < questions.length; i++) {
 }
 
 // =====================================================
-// 6) AUSWERTUNG
+// 6) AUSWERTUNG (Haupt-/Nebenprofile, Konflikte, Erklärung, Reflektion)
 // =====================================================
-formElem.addEventListener("submit", function(evt){
+formElem.addEventListener("submit", function(evt) {
   evt.preventDefault();
   var formData = new FormData(formElem);
   var tierCounts = {};
 
-  // Zähle alle Tierpunkte
+  // 6a) Punkte zählen
   for (var i = 0; i < questions.length; i++) {
     var q = questions[i];
     var answerKeys = Object.keys(q.answers);
@@ -487,49 +547,91 @@ formElem.addEventListener("submit", function(evt){
       var valStr = formData.get(fieldName);
       var valNum = parseInt(valStr, 10) || 0;
 
+      // Kombinierte Zuordnung (C1–C4)
       if (comboMapping[ans.code]) {
         var tierList = comboMapping[ans.code];
-var anteil = valNum / tierList.length;
-tierList.forEach(function(tier){
-  tierCounts[tier] = (tierCounts[tier] || 0) + anteil;
-});
+        var anteil = valNum / tierList.length;
 
-      } else {
+        tierList.forEach(function(tier) {
+          tierCounts[tier] = (tierCounts[tier] || 0) + anteil;
+
+          if (valNum >= 3) {
+            var gegner = gegenspieler[tier];
+            if (gegner) {
+              tierCounts[gegner] = (tierCounts[gegner] || 0) - 1;
+            }
+          }
+        });
+      } 
+      // Einfache Tier-Zuordnung
+      else {
         var singleTier = codeToTier[ans.code];
         tierCounts[singleTier] = (tierCounts[singleTier] || 0) + valNum;
+
+        if (valNum >= 3) {
+          var gegner = gegenspieler[singleTier];
+          if (gegner) {
+            tierCounts[gegner] = (tierCounts[gegner] || 0) - 1;
+          }
+        }
       }
     }
   }
 
-  // Gesamtsumme für Prozentberechnung
-  var totalPoints = Object.values(tierCounts).reduce((sum, val) => sum + val, 0);
+  // 6b) Ergebnisanzeige vorbereiten
+  var ergebnisElem = document.getElementById("ergebnis");
+  ergebnisElem.innerHTML = "<h2>Dein Verhaltens-Mix</h2>";
 
-  // Sortierung nach Punkten
+  // 6c) Sortieren und Top 5 ermitteln
   var sortedTiers = Object.entries(tierCounts).sort((a, b) => b[1] - a[1]);
   var top5 = sortedTiers.slice(0, 5);
   var hauptprofile = top5.slice(0, 3);
   var nebenprofile = top5.slice(3, 5);
+  var top5Total = top5.reduce((sum, el) => sum + el[1], 0);
+  var top5Names = top5.map(([tierName]) => tierName);
 
-  var ergebnisElem = document.getElementById("ergebnis");
-  ergebnisElem.innerHTML = "<h2>Dein Verhaltens-Mix</h2>";
-
+  // 6d) Darstellung mit Mini-Charts
   function renderTierBlock(title, tierList, top5Total) {
     var section = document.createElement("div");
     section.innerHTML = "<h3>" + title + "</h3>";
-    tierList.forEach(function([tierName, value], idx) {
-     var prozent = ((value / top5Total) * 100).toFixed(1);
+
+    tierList.forEach(function([tierName, value]) {
+      var prozent = Math.round((value / top5Total) * 100);
       var tierDiv = document.createElement("div");
       tierDiv.className = "tier-block";
       var canvasId = "tierChart_" + tierName.replace(/\s+/g, "_");
 
-      tierDiv.innerHTML = `
-        <strong>${tierName}</strong> – ${tierTexte[tierName] || ""}
-        <br><em>${prozent}% innerhalb deiner Top 5</em>
+      var info = tierTexte[tierName] || {};
+      var kurz = info.kurz || "";
+      var symbol = info.symbolischFür || "";
+
+      var blockHTML = `
+        <strong>${tierName}</strong><br>
+        <span>${kurz}</span><br>
+        <em>Symbolisch für: ${symbol}</em><br>
+        <em>${prozent}% innerhalb deiner Top 5</em>
         <canvas id="${canvasId}" width="300" height="150"></canvas>
       `;
 
+      // Konflikttext (wenn Gegenspieler ausserhalb Top 5)
+      if (tierKonflikte[tierName]) {
+        var conflicts = tierKonflikte[tierName];
+        var conflictHTML = "<ul style='list-style:none; padding-left:0; margin:8px 0;'>";
+        for (var opponent in conflicts) {
+          if (!top5Names.includes(opponent)) {
+            conflictHTML += `<li><strong>${opponent}</strong>: ${conflicts[opponent]}</li>`;
+          }
+        }
+        conflictHTML += "</ul>";
+        if (conflictHTML !== "<ul style='list-style:none; padding-left:0; margin:8px 0;'></ul>") {
+          blockHTML += "<div class='tier-conflicts'><strong>Konflikte:</strong>" + conflictHTML + "</div>";
+        }
+      }
+
+      tierDiv.innerHTML = blockHTML;
       section.appendChild(tierDiv);
 
+      // Chart rendern
       setTimeout(() => {
         new Chart(document.getElementById(canvasId).getContext("2d"), {
           type: 'doughnut',
@@ -551,74 +653,76 @@ tierList.forEach(function(tier){
         });
       }, 10);
     });
+
     ergebnisElem.appendChild(section);
   }
 
-  var top5Total = top5.reduce((sum, el) => sum + el[1], 0);
-renderTierBlock("🧭 Hauptprofile (Top 3)", hauptprofile, top5Total);
-renderTierBlock("🧩 Nebenprofile (Platz 4 & 5)", nebenprofile, top5Total);
+  // 6e) Anzeigen
+  renderTierBlock("🧭 Hauptprofile (Top 3)", hauptprofile, top5Total);
+  renderTierBlock("🧩 Nebenprofile (Platz 4 & 5)", nebenprofile, top5Total);
 
-  // Erklärung am Ende
+  // 6f) Erklärungstext
   var erklaerung = document.createElement("div");
   erklaerung.className = "ergebnis-erklaerung";
   erklaerung.innerHTML = `
-    Diese Übersicht zeigt deinen momentanen Verhaltens-Mix anhand von Tiermetaphern.
-    Die <strong>Hauptprofile</strong> spiegeln dominante Eigenschaften wider,
-    die <strong>Nebenprofile</strong> ergänzen sie durch weitere Facetten.
-    Die Prozentzahlen basieren auf allen Antworten und visualisieren dein aktuelles Gesamtbild.
+    <p>
+      Diese Übersicht zeigt deinen momentanen Verhaltens-Mix anhand von Tiermetaphern.
+      Die <strong>Hauptprofile</strong> spiegeln dominante Eigenschaften wider,
+      die <strong>Nebenprofile</strong> ergänzen sie durch weitere Facetten.
+      Die Prozentzahlen basieren auf allen Antworten und verdeutlichen dein persönliches Gesamtbild.
+    </p>
   `;
-
-
-
-
   ergebnisElem.appendChild(erklaerung);
-var konfliktDiv = document.createElement("div");
-konfliktDiv.className = "ergebnis-erklaerung";
-konfliktDiv.style.marginTop = "20px";
-konfliktDiv.innerHTML = "<h3>⚡ Potenzielle Spannungsfelder</h3><ul>";
 
-hauptprofile.forEach(function([tierName]) {
-  var konflikte = tierKonflikte[tierName];
-  if (konflikte) {
-    Object.entries(konflikte).forEach(([gegner, beschreibung]) => {
-      konfliktDiv.innerHTML += `
-        <li><strong>${tierName}</strong> steht potenziell im Widerspruch zu <em>${gegner}</em>: ${beschreibung}</li>
-      `;
-    });
-  }
-});
-
-konfliktDiv.innerHTML += "</ul>";
-ergebnisElem.appendChild(konfliktDiv);
-
-  // Reflektionstext ergänzen
+  // 6g) Reflektion
   var reflekt = document.createElement("div");
   reflekt.className = "ergebnis-erklaerung";
   reflekt.style.marginTop = "20px";
   reflekt.innerHTML = `
-    <h3>🔍 Wie du dein Ergebnis verstehen kannst</h3>
+    <h3>🔍 Was dein Tierprofil dir zeigt – und warum es mehr als nur spannend ist</h3>
     <p>
-      Die dargestellten Tiermetaphern symbolisieren verschiedene Seiten deines Verhaltens – 
-      keine davon ist "besser" oder "richtiger" als die andere.
+      Dein Ergebnis ist mehr als eine nette Spielerei: <strong>Es ist ein Spiegel deiner aktuellen Verhaltensdynamik</strong>.
+      Jedes Tier steht für bestimmte Denk-, Fühl- und Handlungsweisen – und <em>der Mix macht dich einzigartig</em>.
     </p>
     <p>
-      Dein Mix zeigt, welche Stärken bei dir aktuell im Vordergrund stehen. 
-      Vielleicht erkennst du dich in einem mutigen <strong>Löwen</strong>, einer strukturierten <strong>Ameise</strong> 
-      oder einem anpassungsfähigen <strong>Chamäleon</strong> wieder.
+      Vielleicht steckt in dir ein mutiger <strong>Löwe</strong>, eine strukturierte <strong>Ameise</strong>,
+      ein visionäres <strong>Einhorn</strong> oder ein tiefgründiger <strong>Wal</strong>?
     </p>
     <p>
-      Je nach Lebensphase, Rolle oder Herausforderung können sich diese Anteile verändern. 
-      Ein starker „Adler“-Anteil zeigt etwa Fokus und Überblick, 
-      während ein hoher „Wal“-Wert auf innere Ruhe und Stabilität hinweist.
+      Diese Tierbilder helfen dir, dich selbst mit einem Augenzwinkern und Tiefe zu betrachten – 
+      <strong>ohne Schubladen, dafür mit Raum zur Reflexion</strong>.
     </p>
     <p>
-      Dein Verhaltens-Mix ist kein endgültiges Urteil, sondern eine Momentaufnahme – 
-      und zugleich eine Einladung zur Selbstreflexion:
-      <em>Was erkennst du wieder? Was willst du weiterentwickeln?</em>
+      Lust, dein Profil gemeinsam mit anderen zu entdecken, zu hinterfragen und weiterzuentwickeln?
+      <strong>Dann ist ein Workshop genau das Richtige für dich!</strong>
     </p>
-    <p><strong>Nutze dein Tierprofil nicht als Schublade – sondern als Spiegel.</strong></p>
+    <p>
+      Denn: <em>Persönlichkeitsentwicklung darf Spass machen.</em> Erkenntnisse gewinnen wir oft am besten im Austausch.
+    </p>
   `;
   ergebnisElem.appendChild(reflekt);
+});
+
+// =====================================================
+// 7) PDF-Button-Funktion (mehrseitiger Export mit html2pdf.js)
+// =====================================================
+// Ersetze den alten PDF-Code komplett durch diesen Block.
+document.getElementById("pdfButton").addEventListener("click", function () {
+  const element = document.getElementById("ergebnis");
+  
+  const opt = {
+    margin:       10,  // Rand in mm
+    filename:     'Auswertung.pdf',
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff', willReadFrequently: true },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+  };
+
+  // Mit einer kurzen Verzögerung, damit alle Inhalte vollständig gerendert sind
+  setTimeout(() => {
+    html2pdf().set(opt).from(element).save();
+  }, 2000);
 });
 </script>
 
